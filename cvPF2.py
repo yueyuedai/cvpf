@@ -36,6 +36,8 @@ from rounding import *
 from wireless_80211b import *
 from matplotlib import *
 import math
+import threading
+import Queue
 
 def f(u):
     return math.log(u)
@@ -271,7 +273,15 @@ def cvPF(U,A,r,w,a):
 #               scenario function
 #               cvapPF
 #               nlapPF
-
+def worker(A,U,distance,coverage,w,a):
+    rate = scence(A,U,distance,coverage)
+    b = cvPF(U,A,rate,w,a)
+    User_by = []
+    for j in range(100):
+            User_by.append(b[j])
+    print 10000000000
+    q.put(User_by)
+    
 if __name__ =="__main__":
     A = 20 # The number of APs
     U = 250 # The number of Users
@@ -285,24 +295,18 @@ if __name__ =="__main__":
     userb = []# this is to construct the mid matrix of bandwidth
     t = 100#rerun time
     #### circle 100 times to obtain the average value#########
-    for k in range(t):
-        rate = scence(A,U,distance,coverage)
-        b = cvPF(U,A,rate,w,a)
-        #b.sort()
-        #print("######### The bandwidth of each user  ###########")
-        User_bx = []
-        User_by = []
-        for j in range(100):
-            User_by.append(b[j])
-        userb.append(User_by)
-    #print User_bx
-    #print rate
-    #plt.plot(AP_x,AP_y,'ro')
-      print("Round Times %d"%k)
-    print len(userb)
+    result = list()
+    for k in xrange(t):
+        t1 = threading.Thread(target=worker(A,U,distance,coverage,w,a))
+        #t1.setDaemon(True)
+        t1.start()
+        t1.join()
+    while not q.empty():
+        result.append(q.get())	
+    print("Round Times %d" % k)
     for  i in range(100):
         User_x.append(i)
-    by1 = map(sum,zip(*userb))
+    by1 = map(sum,zip(*result))
     for j in by1:
         User_y.append(j/t)
     User_y.sort()
